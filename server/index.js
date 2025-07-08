@@ -6,14 +6,24 @@ dotenv.config();
 
 const app = express();
 
-const allowedOrigins = (process.env.FRONTEND_ORIGINS || 'http://localhost:5173').split(',');
-
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://hauntedbd.netlify.app'
+];
 
 app.use(cors({
-  origin: true, // Allow all origins
+  origin: function (origin, callback) {
+    console.log('Incoming Origin:', origin);
+
+    // Allow requests from Postman, curl, or mobile with no origin
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
-app.use(express.json());
 
 const storyRoutes = require('./routes/stories');
 const adminRoutes = require("./routes/admin");
