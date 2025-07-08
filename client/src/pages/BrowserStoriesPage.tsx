@@ -11,10 +11,14 @@ const BrowseStoriesPage: React.FC = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [districtsWithStories, setDistrictsWithStories] = useState<Set<string>>(new Set());
+  const [districtsWithStories, setDistrictsWithStories] = useState<Set<string>>(
+    new Set()
+  );
 
   const selectedDivisionData = divisions.find((d) => d.id === selectedDivision);
-  const selectedDistrictData = selectedDivisionData?.districts.find((d) => d.id === selectedDistrict);
+  const selectedDistrictData = selectedDivisionData?.districts.find(
+    (d) => d.id === selectedDistrict
+  );
 
   const handleDivisionSelect = (id: string) => {
     setSelectedDivision(id);
@@ -30,7 +34,7 @@ const BrowseStoriesPage: React.FC = () => {
 
   const fetchStoriesByDistrict = (districtId: string) => {
     setLoading(true);
-    fetch(`https://bd-horor-atlas.onrender.com/api/stories?district=${districtId}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/stories?district=${districtId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch stories");
         return res.json();
@@ -48,16 +52,17 @@ const BrowseStoriesPage: React.FC = () => {
   useEffect(() => {
     if (!selectedDivision) return;
 
-    fetch(`https://bd-horor-atlas.onrender.com/api/districts-with-stories?division=${selectedDivision}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/stories/districts-with-stories?division=${selectedDivision}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch story info");
         return res.json();
       })
-      .then((data) => {
-        const storyDistricts = new Set<string>(data.map((d: any) => d._id));
+      .then((data: string[]) => { // Expecting an array of strings directly
+        const storyDistricts = new Set<string>(data);
         setDistrictsWithStories(storyDistricts);
       })
-      .catch(() => {
+      .catch((err) => { // Added err parameter to see the error in console
+        console.error("Error fetching districts with stories:", err); // Log the error
         setDistrictsWithStories(new Set());
       });
   }, [selectedDivision]);
@@ -65,7 +70,10 @@ const BrowseStoriesPage: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto p-6 text-white">
       {!selectedDivision ? (
-        <DivisionSelector divisions={divisions} onSelect={handleDivisionSelect} />
+        <DivisionSelector
+          divisions={divisions}
+          onSelect={handleDivisionSelect}
+        />
       ) : !selectedDistrict ? (
         <div className="bg-gray-900 p-8 rounded-xl shadow-xl border border-gray-800">
           <button

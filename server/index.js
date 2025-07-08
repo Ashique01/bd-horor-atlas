@@ -6,17 +6,19 @@ dotenv.config();
 
 const app = express();
 
-const allowedOrigins = [process.env.FRONTEND_ORIGIN || 'https://hauntedbd.netlify.app'];
+const allowedOrigins = (process.env.FRONTEND_ORIGINS || 'http://localhost:5173').split(',');
+
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
+  origin: function(origin, callback) {
+    // allow requests with no origin (like curl or Postman)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error("Not allowed by CORS"));
+      callback(new Error('Not allowed by CORS'));
     }
   },
+   credentials: true,
 }));
 app.use(express.json());
 
@@ -26,6 +28,13 @@ const adminRoutes = require("./routes/admin");
 app.use('/api/stories', storyRoutes);
 app.use("/api/admin", adminRoutes);
 
+
+app.get('/', (req, res) => {
+  res.send('📡 API Server is running');
+});
+app.use((req, res) => {
+  res.status(404).json({ error: "Endpoint not found" });
+});
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -38,9 +47,3 @@ mongoose
   .catch(err => console.error(err));
 
 
-app.get('/', (req, res) => {
-  res.send('📡 API Server is running');
-});
-app.use((req, res) => {
-  res.status(404).json({ error: "Endpoint not found" });
-});

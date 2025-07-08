@@ -14,8 +14,19 @@ import BrowseStoriesPage from "./pages/BrowserStoriesPage";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useState } from "react";
+
+
 
 function App() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
+
+  // Optional: resetSelection can also close menu if needed
+  const resetSelection = () => {
+    setIsMobileMenuOpen(false);
+  };
   return (
     <Router>
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-950 via-black to-purple-950 text-white font-sans overflow-hidden relative">
@@ -24,12 +35,11 @@ function App() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
         <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
 
-        <Navbar
-          resetSelection={() => {}}
-          isMobileMenuOpen={false}
-          toggleMobileMenu={() => {}}
+         <Navbar
+          resetSelection={resetSelection}
+          isMobileMenuOpen={isMobileMenuOpen}
+          toggleMobileMenu={toggleMobileMenu}
         />
-
         <main className="flex-grow container mx-auto px-6 py-28 relative z-10">
           <Routes>
             {/* Public Routes */}

@@ -23,7 +23,7 @@ const PendingStoriesPage: React.FC = () => {
     setLoading(true);
     try {
       const res = await fetch(
-        "https://bd-horor-atlas.onrender.com/api/stories?status=pending"
+        `${import.meta.env.VITE_API_URL}/api/stories?status=pending`
       );
       if (!res.ok) throw new Error("Failed to fetch pending stories");
       const data = await res.json();
@@ -39,7 +39,7 @@ const PendingStoriesPage: React.FC = () => {
   const updateStatus = async (id: string, status: "approved" | "rejected") => {
     try {
       const res = await fetch(
-        `https://bd-horor-atlas.onrender.com/api/stories/${id}/${
+        `${import.meta.env.VITE_API_URL}/api/stories/${id}/${
           status === "approved" ? "approve" : "reject"
         }`,
         {

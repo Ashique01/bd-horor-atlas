@@ -56,9 +56,14 @@ const Navbar: React.FC<Props> = ({
         </div>
 
         {/* Hamburger Menu Button */}
+        {/* Added a console.log for initial debugging, you can remove this later */}
         <button
-          onClick={toggleMobileMenu}
+          onClick={() => {
+            console.log("Hamburger button clicked!"); // Debug log
+            toggleMobileMenu();
+          }}
           className="md:hidden text-white focus:outline-none relative w-8 h-6 flex flex-col justify-between"
+          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"} // Accessibility
         >
           <span
             className={`block w-full h-0.5 bg-white transition-all duration-300 ease-out ${
@@ -80,16 +85,17 @@ const Navbar: React.FC<Props> = ({
 
       {/* Mobile Menu */}
       <div
-        className={`md:hidden absolute top-full left-0 w-full bg-gray-900 bg-opacity-95 backdrop-blur-md transition-all duration-500 ease-in-out transform ${
-          isMobileMenuOpen
-            ? "translate-y-0 opacity-100"
-            : "-translate-y-full opacity-0 pointer-events-none"
-        } flex flex-col items-center py-6 border-t border-purple-800`}
+        className={`md:hidden absolute top-full left-0 w-full bg-gray-900 bg-opacity-95 backdrop-blur-md transition-all duration-500 ease-in-out flex flex-col items-center py-6 border-t border-purple-800
+          ${isMobileMenuOpen
+            ? "max-h-screen opacity-100 visible" // Menu is open
+            : "max-h-0 opacity-0 invisible" // Menu is closed
+          }`}
+        style={{ overflow: 'hidden' }} // Ensure content is clipped when max-height is 0
       >
         <Link
           to="/about-us"
           onClick={() => {
-            toggleMobileMenu();
+            toggleMobileMenu(); // Close menu after clicking
             resetSelection();
           }}
           className="block text-gray-300 hover:text-white text-xl py-3 w-full text-center transition-colors duration-300 hover:bg-purple-900/50 rounded-lg my-1"
@@ -100,7 +106,7 @@ const Navbar: React.FC<Props> = ({
         <Link
           to="/contact"
           onClick={() => {
-            toggleMobileMenu();
+            toggleMobileMenu(); // Close menu after clicking
             resetSelection();
           }}
           className="block text-gray-300 hover:text-white text-xl py-3 w-full text-center transition-colors duration-300 hover:bg-purple-900/50 rounded-lg my-1"
@@ -111,7 +117,7 @@ const Navbar: React.FC<Props> = ({
         <Link
           to="/submit-story"
           onClick={() => {
-            toggleMobileMenu();
+            toggleMobileMenu(); // Close menu after clicking
           }}
           className="block text-pink-400 font-semibold text-xl py-3 w-full text-center transition-colors duration-300 hover:bg-pink-900/50 rounded-lg my-1 border border-pink-400"
         >

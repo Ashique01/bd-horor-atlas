@@ -9,7 +9,7 @@ const AdminLogin: React.FC = () => {
 
 const handleLogin = async () => {
   try {
-    const res = await fetch("https://bd-horor-atlas.onrender.com/api/admin/login", {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -153,7 +153,7 @@ const AdminDashboard: React.FC = () => {
   const fetchAllStories = async () => {
     setLoading(true);
     try {
-      const res = await fetch("https://bd-horor-atlas.onrender.com/api/stories?all=true");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/stories?all=true`);
       if (!res.ok) throw new Error("Failed to fetch stories");
       const data: Story[] = await res.json();
       setStories(data);
@@ -198,52 +198,52 @@ const AdminDashboard: React.FC = () => {
   ) => {
     try {
       const res = await fetch(
-        `https://bd-horor-atlas.onrender.com/api/stories/${id}/${status}`,
+        `${import.meta.env.VITE_API_URL}/api/stories/${id}/${status}`,
         {
           method: "PATCH",
         }
       );
       if (!res.ok) throw new Error(`Failed to ${status} story`);
       setSelectedStory(null);
-      fetchAllStories();
+      fetchAllStories(); // Refresh stories to reflect changes
       openInfoModal(
         status === "approved" ? "✅ অনুমোদন হয়েছে!" : "❌ বাতিল করা হয়েছে!"
       );
     } catch (err: any) {
-      openInfoModal(err.message);
+      openInfoModal(`স্টোরি ${status === "approved" ? "অনুমোদন" : "বাতিল"} করতে ব্যর্থ: ${err.message}`);
     }
   };
 
   // Update story content (for rejected story editing)
   const updateStoryContent = async (id: string, newContent: string) => {
     try {
-      const res = await fetch(`https://bd-horor-atlas.onrender.com/api/stories/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/stories/${id}`, {
         method: "PUT", // Assuming you have a PUT endpoint for update
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ content: newContent }),
+        body: JSON.stringify({ content: newContent, isAdminApproved: true, isRejected: false }), // Set to approved after editing
       });
       if (!res.ok) throw new Error("Failed to update story");
-      openInfoModal("✏️ স্টোরি সফলভাবে আপডেট হয়েছে!");
-      fetchAllStories();
-      setSelectedStory(null);
+      openInfoModal("✏️ স্টোরি সফলভাবে আপডেট ও অনুমোদন হয়েছে!");
+      fetchAllStories(); // Refresh stories
+      setSelectedStory(null); // Close modal
     } catch (err: any) {
-      openInfoModal(err.message);
+      openInfoModal(`স্টোরি আপডেট করতে ব্যর্থ: ${err.message}`);
     }
   };
 
   const deleteStory = async (id: string) => {
     openConfirmModal("আপনি কি নিশ্চিত এই স্টোরিটি মুছে ফেলতে চান?", async () => {
       try {
-        const res = await fetch(`https://bd-horor-atlas.onrender.com/api/stories/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/stories/${id}`, {
           method: "DELETE",
         });
         if (!res.ok) throw new Error("Failed to delete story");
         openInfoModal("🗑️ স্টোরি মুছে ফেলা হয়েছে!");
-        fetchAllStories();
+        fetchAllStories(); // Refresh stories
       } catch (err: any) {
-        openInfoModal(err.message);
+        openInfoModal(`স্টোরি মুছে ফেলতে ব্যর্থ: ${err.message}`);
       }
     });
   };
@@ -251,15 +251,32 @@ const AdminDashboard: React.FC = () => {
   const clearAllRejected = async () => {
     openConfirmModal("আপনি কি নিশ্চিত সব বাতিলকৃত স্টোরি মুছে ফেলতে চান?", async () => {
       try {
-        const rejectedIds = rejectedStories.map((s) => s._id);
-        await Promise.all(
+        // Fetch all rejected stories again to ensure we have the latest list
+        const currentRejectedStories = stories.filter((s) => s.isRejected);
+        const rejectedIds = currentRejectedStories.map((s) => s._id);
+
+        if (rejectedIds.length === 0) {
+            openInfoModal("মুছে ফেলার জন্য কোনো বাতিলকৃত গল্প নেই।");
+            return;
+        }
+
+        // Use Promise.allSettled to ensure all promises are attempted even if some fail
+        const results = await Promise.allSettled(
           rejectedIds.map((id) =>
-            fetch(`https://bd-horor-atlas.onrender.com/api/stories/${id}`, { method: "DELETE" })
+            fetch(`${import.meta.env.VITE_API_URL}/api/stories/${id}`, { method: "DELETE" })
           )
         );
-        openInfoModal("সব বাতিলকৃত স্টোরি মুছে ফেলা হয়েছে!");
-        fetchAllStories();
-        setRejectedPage(1);
+
+        const failedDeletions = results.filter(result => result.status === 'rejected');
+
+        if (failedDeletions.length > 0) {
+          openInfoModal(`কিছু বাতিলকৃত গল্প মুছে ফেলা সম্ভব হয়নি। (${failedDeletions.length} ব্যর্থ)`);
+        } else {
+          openInfoModal("সব বাতিলকৃত গল্প মুছে ফেলা হয়েছে!");
+        }
+        
+        fetchAllStories(); // Refresh stories after attempting deletions
+        setRejectedPage(1); // Reset pagination
       } catch (err: any) {
         openInfoModal("সব মুছে ফেলা সম্ভব হয়নি। আবার চেষ্টা করুন।");
       }
@@ -312,335 +329,316 @@ const AdminDashboard: React.FC = () => {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-950 to-black text-white">
-        <p className="text-xl animate-pulse">গল্প লোড হচ্ছে...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <p className="text-xl">গল্প লোড হচ্ছে...</p>
       </div>
     );
   if (error)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-950 to-black text-red-500">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-red-500">
         <p className="text-xl">Error: {error}</p>
       </div>
     );
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center text-white relative overflow-hidden
-                 bg-gradient-to-br from-gray-950 to-black font-sans"
-    >
-      {/* Subtle textured overlay */}
-      <div className="absolute inset-0 z-0 bg-repeat opacity-10"
-           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M9 0H6v6l3-3V0zm3 3v3L9 6V3h3z'/%3E%3C/g%3E%3C/svg%3E")` }}>
-      </div>
+    <div className="min-h-screen flex flex-col items-center bg-gray-900 text-white p-4">
+      <div className="max-w-4xl w-full bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+          <h1 className="text-3xl text-blue-400 font-bold text-center sm:text-left mb-4 sm:mb-0 flex-grow">
+            👨‍💻 অ্যাডমিন ড্যাশবোর্ড
+          </h1>
+          <button
+            onClick={handleLogout}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-semibold transition-colors duration-200"
+          >
+            🚪 লগআউট
+          </button>
+        </div>
 
-      {/* Subtle Background Orbs */}
-      <div className="absolute top-1/4 left-1/12 w-48 h-48 bg-purple-600 rounded-full mix-blend-screen filter blur-3xl opacity-15 animate-orb-move z-0"></div>
-      <div className="absolute bottom-1/4 right-1/12 w-40 h-40 bg-indigo-600 rounded-full mix-blend-screen filter blur-3xl opacity-15 animate-orb-move delay-500 z-0"></div>
-      <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-pink-600 rounded-full mix-blend-screen filter blur-3xl opacity-10 animate-orb-move delay-1000 z-0"></div>
+        {/* Search/filter input */}
+        <div className="mb-6 text-center">
+          <input
+            type="text"
+            placeholder="বিভাগ বা জেলা দিয়ে খুঁজুন..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPendingPage(1);
+              setRejectedPage(1);
+            }}
+            className="w-full max-w-md p-2 rounded-md bg-gray-700 text-white placeholder-gray-400 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Search stories"
+          />
+        </div>
 
-      {/* Main Content Area */}
-      <div className="relative z-10 w-full flex flex-col items-center py-10 px-4 sm:px-6 lg:px-8 custom-scrollbar max-w-screen-xl">
-        <div className="bg-gray-900/80 rounded-3xl shadow-3xl backdrop-blur-md border border-purple-800/50 max-w-7xl w-full p-6 sm:p-8 lg:p-10 mb-10 transform hover:scale-[1.005] transition-all duration-300 ease-in-out">
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
-            <h1 className="text-4xl sm:text-5xl text-purple-400 font-extrabold text-center sm:text-left mb-4 sm:mb-0 drop-shadow-xl flex-grow">
-              👨‍💻 অ্যাডমিন ড্যাশবোর্ড
-            </h1>
-            <button
-              onClick={handleLogout}
-              className="bg-gradient-to-r from-red-600 to-pink-700 hover:from-red-700 hover:to-pink-800 px-6 py-3 rounded-full text-lg font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-xl uppercase tracking-wider glow-effect"
-            >
-              🚪 লগআউট
-            </button>
-          </div>
+        {/* Story Submission Form Toggle */}
+        <div className="text-right mb-6">
+          <button
+            onClick={() => setShowSubmitForm((prev) => !prev)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-semibold transition-colors duration-200"
+          >
+            {showSubmitForm ? "➖ সাবমিশন ফর্ম বন্ধ করুন" : "➕ নতুন গল্প জমা দিন"}
+          </button>
+        </div>
 
-          {/* Search/filter input */}
-          <div className="mb-8 text-center">
-            <input
-              type="text"
-              placeholder="বিভাগ বা জেলা দিয়ে খুঁজুন..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPendingPage(1);
-                setRejectedPage(1);
+        {showSubmitForm && (
+          <div className="mb-8 p-4 bg-gray-700 rounded-lg shadow-inner">
+            <SubmitStoryForm
+              onCancel={() => setShowSubmitForm(false)}
+              onSubmitted={() => {
+                setShowSubmitForm(false);
+                fetchAllStories();
               }}
-              className="w-full max-w-md py-3 px-4 rounded-xl bg-gray-700/60 text-white placeholder-gray-400
-                         border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500
-                         transition-all duration-200"
-              aria-label="Search stories"
             />
           </div>
+        )}
 
-          {/* Story Submission Form Toggle */}
-          <div className="text-right mb-8">
-            <button
-              onClick={() => setShowSubmitForm((prev) => !prev)}
-              className="bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 px-6 py-3 rounded-full text-lg font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-xl uppercase tracking-wider glow-effect"
-            >
-              {showSubmitForm ? "➖ সাবমিশন ফর্ম বন্ধ করুন" : "➕ নতুন গল্প জমা দিন"}
-            </button>
+        {/* Dashboard Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-center">
+          <div className="bg-gray-700 p-4 rounded-lg shadow">
+            <p className="text-md font-semibold text-gray-300">মোট গল্প</p>
+            <p className="text-3xl text-blue-300 font-bold mt-1">{total}</p>
           </div>
-
-          {showSubmitForm && (
-            <div className="mb-10 p-6 bg-gray-800/70 rounded-2xl shadow-2xl border border-indigo-700/50">
-              <SubmitStoryForm
-                onCancel={() => setShowSubmitForm(false)}
-                onSubmitted={() => {
-                  setShowSubmitForm(false);
-                  fetchAllStories();
-                }}
-              />
-            </div>
-          )}
-
-          {/* Dashboard Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10 text-center">
-            <div className="bg-gray-800/70 p-6 rounded-2xl shadow-xl border border-gray-700">
-              <p className="text-xl font-semibold text-gray-300">মোট গল্প</p>
-              <p className="text-4xl text-purple-400 font-bold mt-2">{total}</p>
-            </div>
-            <div className="bg-green-900/70 p-6 rounded-2xl shadow-xl border border-green-700">
-              <p className="text-xl font-semibold text-gray-300">অনুমোদিত</p>
-              <p className="text-4xl text-green-300 font-bold mt-2">{approved}</p>
-            </div>
-            <div className="bg-yellow-900/70 p-6 rounded-2xl shadow-xl border border-yellow-700">
-              <p className="text-xl font-semibold text-gray-300">পর্যালোচনাধীন</p>
-              <p className="text-4xl text-yellow-300 font-bold mt-2">{pending}</p>
-            </div>
-            <div className="bg-red-900/70 p-6 rounded-2xl shadow-xl border border-red-700">
-              <p className="text-xl font-semibold text-gray-300">বাতিলকৃত</p>
-              <p className="text-4xl text-red-300 font-bold mt-2">{rejected}</p>
-            </div>
+          <div className="bg-green-700 p-4 rounded-lg shadow">
+            <p className="text-md font-semibold text-gray-300">অনুমোদিত</p>
+            <p className="text-3xl text-green-300 font-bold mt-1">{approved}</p>
           </div>
-
-          {/* Top Districts */}
-          <div className="mb-10 p-6 bg-gray-800/70 rounded-2xl shadow-2xl border border-pink-700/50">
-            <h2 className="text-3xl text-pink-400 font-semibold mb-6">
-              📊 শীর্ষ জেলা সমূহ (গল্পের সংখ্যার ভিত্তিতে)
-            </h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {topDistricts.map(([key, count], idx) => {
-                const [division, district] = key.split(" - ");
-                return (
-                  <div
-                    key={idx}
-                    className="bg-gray-700/60 p-4 rounded-xl shadow-md border border-gray-600 hover:border-purple-500 transition-all duration-200"
-                  >
-                    <p className="text-lg text-white font-semibold mb-1">
-                      {idx + 1}. <span className="text-blue-400">{district}</span>,{" "}
-                      <span className="text-green-400">{division}</span>
-                    </p>
-                    <p className="text-gray-300">
-                      গল্পের সংখ্যা:{" "}
-                      <span className="text-purple-300 font-bold">{count}</span>
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="bg-yellow-700 p-4 rounded-lg shadow">
+            <p className="text-md font-semibold text-gray-300">পর্যালোচনাধীন</p>
+            <p className="text-3xl text-yellow-300 font-bold mt-1">{pending}</p>
           </div>
+          <div className="bg-red-700 p-4 rounded-lg shadow">
+            <p className="text-md font-semibold text-gray-300">বাতিলকৃত</p>
+            <p className="text-3xl text-red-300 font-bold mt-1">{rejected}</p>
+          </div>
+        </div>
 
-          {/* Pending Stories */}
-          <h2 className="text-3xl text-blue-400 font-semibold mb-6 mt-10">
-            🕵️ পর্যালোচনাধীন গল্পসমূহ
+        {/* Top Districts */}
+        <div className="mb-8 p-4 bg-gray-700 rounded-lg shadow">
+          <h2 className="text-xl text-blue-300 font-semibold mb-4">
+            📊 শীর্ষ জেলা সমূহ (গল্পের সংখ্যার ভিত্তিতে)
           </h2>
-          {pendingStories.length === 0 ? (
-            <p className="text-center text-gray-400 text-lg py-8 bg-gray-800/70 rounded-2xl shadow-xl border border-gray-700">
-              পর্যালোচনার জন্য কোনো গল্প নেই।
-            </p>
-          ) : (
-            <>
-              <ul>
-                {paginatedPending.map((story) => (
-                  <li
-                    key={story._id}
-                    className="bg-gray-800/70 p-6 mb-6 rounded-2xl border border-gray-700 shadow-xl transform hover:scale-[1.005] transition-all duration-200"
-                  >
-                    <h3 className="text-2xl font-semibold mb-2 text-pink-300">
-                      {story.title}
-                    </h3>
-                    <p
-                      className={`mb-3 whitespace-pre-line text-gray-200 leading-relaxed ${
-                        expandedStoryIds.has(story._id) ? "" : "line-clamp-3"
-                      }`}
-                    >
-                      {story.content}
-                    </p>
-                    <button
-                      onClick={() => toggleExpand(story._id)}
-                      className="text-blue-400 hover:underline text-sm mb-4 transition-colors duration-200"
-                    >
-                      {expandedStoryIds.has(story._id)
-                        ? "▲ কম দেখুন"
-                        : "📖 বিস্তারিত পড়ুন →"}
-                    </button>
-                    <p className="italic text-sm mb-2 text-gray-400">
-                      বিভাগ: {story.division} | জেলা: {districtNameMap[story.district] || story.district}
-                    </p>
-                    {story.source && (
-                      <p className="mb-3 text-sm text-gray-500">
-                        উৎস: {story.source}
-                      </p>
-                    )}
-                    <div className="flex flex-wrap items-center justify-between mt-4 gap-3">
-                      <div className="flex space-x-3">
-                        <button
-                          onClick={() => updateStoryStatus(story._id, "approved")}
-                          className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 px-6 py-3 rounded-full text-base font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md glow-effect"
-                        >
-                          ✅ অনুমোদন করুন
-                        </button>
-                        <button
-                          onClick={() => updateStoryStatus(story._id, "rejected")}
-                          className="bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 px-6 py-3 rounded-full text-base font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md glow-effect"
-                        >
-                          ❌ বাতিল করুন
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => setSelectedStory(story)}
-                        className="text-base text-blue-400 hover:underline transition-colors duration-200 mt-2 sm:mt-0"
-                      >
-                        📖 বিস্তারিত দেখুন (মোডাল) →
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Pagination for pending */}
-              {pendingStories.length > PAGE_SIZE && (
-                <div className="text-center mt-6 flex justify-center space-x-4">
-                  <button
-                    disabled={pendingPage === 1}
-                    onClick={() => setPendingPage(pendingPage - 1)}
-                    className="px-6 py-2 rounded-full bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-colors duration-200"
-                  >
-                    ⬅️ পূর্ববর্তী
-                  </button>
-                  <button
-                    disabled={pendingPage * PAGE_SIZE >= pendingStories.length}
-                    onClick={() => setPendingPage(pendingPage + 1)}
-                    className="px-6 py-2 rounded-full bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-colors duration-200"
-                  >
-                    পরবর্তী ➡️
-                  </button>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {topDistricts.map(([key, count], idx) => {
+              const [division, district] = key.split(" - ");
+              return (
+                <div
+                  key={idx}
+                  className="bg-gray-600 p-3 rounded-md shadow-sm"
+                >
+                  <p className="text-md text-white font-semibold mb-0">
+                    {idx + 1}. <span className="text-blue-200">{district}</span>,{" "}
+                    <span className="text-green-200">{division}</span>
+                  </p>
+                  <p className="text-gray-300 text-sm">
+                    গল্পের সংখ্যা:{" "}
+                    <span className="text-blue-300 font-bold">{count}</span>
+                  </p>
                 </div>
-              )}
-            </>
-          )}
-
-          {/* Rejected Stories */}
-          <div className="flex flex-col sm:flex-row justify-between items-center mt-12 mb-6">
-            <h2 className="text-3xl text-red-400 font-semibold mb-4 sm:mb-0">
-              ❌ বাতিলকৃত গল্পসমূহ
-            </h2>
-            {rejectedStories.length > 0 && (
-              <button
-                onClick={clearAllRejected}
-                className="bg-gradient-to-r from-red-700 to-rose-800 hover:from-red-800 hover:to-rose-900 px-6 py-3 rounded-full text-lg font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-xl uppercase tracking-wider glow-effect"
-              >
-                🗑️ সব বাতিলকৃত গল্প মুছে ফেলুন
-              </button>
-            )}
+              );
+            })}
           </div>
+        </div>
 
-          {rejectedStories.length === 0 ? (
-            <p className="text-center text-gray-500 text-lg py-8 bg-gray-800/70 rounded-2xl shadow-xl border border-gray-700">
-              এখনও কোনো বাতিলকৃত গল্প নেই।
-            </p>
-          ) : (
-            <>
-              <ul>
-                {paginatedRejected.map((story) => (
-                  <li
-                    key={story._id}
-                    className="bg-gray-800/70 p-6 mb-6 rounded-2xl border border-red-600 shadow-xl transform hover:scale-[1.005] transition-all duration-200"
+        {/* Pending Stories */}
+        <h2 className="text-2xl text-yellow-300 font-semibold mb-4 mt-8">
+          🕵️ পর্যালোচনাধীন গল্পসমূহ
+        </h2>
+        {pendingStories.length === 0 ? (
+          <p className="text-center text-gray-400 p-6 bg-gray-700 rounded-lg shadow">
+            পর্যালোচনার জন্য কোনো গল্প নেই।
+          </p>
+        ) : (
+          <>
+            <ul>
+              {paginatedPending.map((story) => (
+                <li
+                  key={story._id}
+                  className="bg-gray-700 p-4 mb-4 rounded-lg border border-gray-600 shadow"
+                >
+                  <h3 className="text-xl font-semibold mb-2 text-pink-300">
+                    {story.title}
+                  </h3>
+                  <p
+                    className={`mb-2 whitespace-pre-line text-gray-200 text-sm ${
+                      expandedStoryIds.has(story._id) ? "" : "line-clamp-3"
+                    }`}
                   >
-                    <h3 className="text-2xl text-red-300 font-semibold mb-2">
-                      {story.title}
-                    </h3>
-                    <p
-                      className={`text-gray-300 mb-3 whitespace-pre-line leading-relaxed ${
-                        expandedStoryIds.has(story._id) ? "" : "line-clamp-3"
-                      }`}
-                    >
-                      {story.content}
+                    {story.content}
+                  </p>
+                  <button
+                    onClick={() => toggleExpand(story._id)}
+                    className="text-blue-400 hover:underline text-xs mb-2"
+                  >
+                    {expandedStoryIds.has(story._id)
+                      ? "▲ কম দেখুন"
+                      : "📖 বিস্তারিত পড়ুন →"}
+                  </button>
+                  <p className="italic text-xs mb-2 text-gray-400">
+                    বিভাগ: {story.division} | জেলা: {districtNameMap[story.district] || story.district}
+                  </p>
+                  {story.source && (
+                    <p className="mb-2 text-xs text-gray-500">
+                      উৎস: {story.source}
                     </p>
-                    <button
-                      onClick={() => toggleExpand(story._id)}
-                      className="text-blue-400 hover:underline text-sm mb-4 transition-colors duration-200"
-                    >
-                      {expandedStoryIds.has(story._id)
-                        ? "▲ কম দেখুন"
-                        : "📖 বিস্তারিত পড়ুন →"}
-                    </button>
-                    <p className="text-sm text-gray-500 italic mb-3">
-                      বিভাগ: {story.division} | জেলা: {districtNameMap[story.district] || story.district}
-                    </p>
-                    <div className="flex flex-wrap gap-3">
+                  )}
+                  <div className="flex flex-wrap items-center justify-between mt-3 gap-2">
+                    <div className="flex space-x-2">
                       <button
-                        onClick={() => openEditModal(story)}
-                        className="bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 px-6 py-3 rounded-full text-base font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md glow-effect"
+                        onClick={() => updateStoryStatus(story._id, "approved")}
+                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm font-semibold"
                       >
-                        ✏️ এডিট ও অনুমোদন করুন
+                        ✅ অনুমোদন করুন
                       </button>
                       <button
-                        onClick={() => deleteStory(story._id)}
-                        className="bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 px-6 py-3 rounded-full text-base font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md glow-effect"
+                        onClick={() => updateStoryStatus(story._id, "rejected")}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm font-semibold"
                       >
-                        🗑️ মুছে ফেলুন
+                        ❌ বাতিল করুন
                       </button>
                     </div>
-                  </li>
-                ))}
-              </ul>
+                    <button
+                      onClick={() => setSelectedStory(story)}
+                      className="text-sm text-blue-400 hover:underline mt-1 sm:mt-0"
+                    >
+                      📖 বিস্তারিত দেখুন (মোডাল) →
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
 
-              {/* Pagination for rejected */}
-              {rejectedStories.length > PAGE_SIZE && (
-                <div className="text-center mt-6 flex justify-center space-x-4">
-                  <button
-                    disabled={rejectedPage === 1}
-                    onClick={() => setRejectedPage(rejectedPage - 1)}
-                    className="px-6 py-2 rounded-full bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-colors duration-200"
-                  >
-                    ⬅️ পূর্ববর্তী
-                  </button>
-                  <button
-                    disabled={rejectedPage * PAGE_SIZE >= rejectedStories.length}
-                    onClick={() => setRejectedPage(rejectedPage + 1)}
-                    className="px-6 py-2 rounded-full bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-colors duration-200"
-                  >
-                    পরবর্তী ➡️
-                  </button>
-                </div>
-              )}
-            </>
+            {/* Pagination for pending */}
+            {pendingStories.length > PAGE_SIZE && (
+              <div className="text-center mt-4 flex justify-center space-x-3">
+                <button
+                  disabled={pendingPage === 1}
+                  onClick={() => setPendingPage(pendingPage - 1)}
+                  className="px-4 py-1 rounded-md bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm"
+                >
+                  ⬅️ পূর্ববর্তী
+                </button>
+                <button
+                  disabled={pendingPage * PAGE_SIZE >= pendingStories.length}
+                  onClick={() => setPendingPage(pendingPage + 1)}
+                  className="px-4 py-1 rounded-md bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm"
+                >
+                  পরবর্তী ➡️
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Rejected Stories */}
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-10 mb-4">
+          <h2 className="text-2xl text-red-300 font-semibold mb-4 sm:mb-0">
+            ❌ বাতিলকৃত গল্পসমূহ
+          </h2>
+          {rejectedStories.length > 0 && (
+            <button
+              onClick={clearAllRejected}
+              className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-md font-semibold transition-colors duration-200"
+            >
+              🗑️ সব বাতিলকৃত গল্প মুছে ফেলুন
+            </button>
           )}
         </div>
+
+        {rejectedStories.length === 0 ? (
+          <p className="text-center text-gray-500 p-6 bg-gray-700 rounded-lg shadow">
+            এখনও কোনো বাতিলকৃত গল্প নেই।
+          </p>
+        ) : (
+          <>
+            <ul>
+              {paginatedRejected.map((story) => (
+                <li
+                  key={story._id}
+                  className="bg-gray-700 p-4 mb-4 rounded-lg border border-red-600 shadow"
+                >
+                  <h3 className="text-xl text-red-300 font-semibold mb-2">
+                    {story.title}
+                  </h3>
+                  <p
+                    className={`text-gray-300 mb-2 whitespace-pre-line text-sm ${
+                      expandedStoryIds.has(story._id) ? "" : "line-clamp-3"
+                    }`}
+                  >
+                    {story.content}
+                  </p>
+                  <button
+                    onClick={() => toggleExpand(story._id)}
+                    className="text-blue-400 hover:underline text-xs mb-2"
+                  >
+                    {expandedStoryIds.has(story._id)
+                      ? "▲ কম দেখুন"
+                      : "📖 বিস্তারিত পড়ুন →"}
+                  </button>
+                  <p className="text-xs text-gray-500 italic mb-2">
+                    বিভাগ: {story.division} | জেলা: {districtNameMap[story.district] || story.district}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <button
+                      onClick={() => openEditModal(story)}
+                      className="bg-blue-700 hover:bg-blue-800 text-white px-3 py-1 rounded-md text-sm font-semibold"
+                    >
+                      ✏️ এডিট ও অনুমোদন করুন
+                    </button>
+                    <button
+                      onClick={() => deleteStory(story._id)}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm font-semibold"
+                    >
+                      🗑️ মুছে ফেলুন
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Pagination for rejected */}
+            {rejectedStories.length > PAGE_SIZE && (
+              <div className="text-center mt-4 flex justify-center space-x-3">
+                <button
+                  disabled={rejectedPage === 1}
+                  onClick={() => setRejectedPage(rejectedPage - 1)}
+                  className="px-4 py-1 rounded-md bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm"
+                >
+                  ⬅️ পূর্ববর্তী
+                </button>
+                <button
+                  disabled={rejectedPage * PAGE_SIZE >= rejectedStories.length}
+                  onClick={() => setRejectedPage(rejectedPage + 1)}
+                  className="px-4 py-1 rounded-md bg-gray-600 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm"
+                >
+                  পরবর্তী ➡️
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Edit & Approve Modal */}
       {selectedStory && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-gray-900/90 p-8 rounded-3xl shadow-3xl backdrop-blur-md max-w-2xl w-full text-white border border-purple-700/50 transform scale-95 animate-scale-in">
-            <h2 className="text-3xl font-bold text-purple-400 mb-4 text-center">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-xl w-full text-white border border-gray-700">
+            <h2 className="text-xl font-bold text-blue-400 mb-4 text-center">
               ✏️ গল্প এডিট ও অনুমোদন করুন
             </h2>
-            <p className="text-lg text-gray-400 mb-4 text-center">
+            <p className="text-md text-gray-400 mb-4 text-center">
               বিভাগ: {selectedStory.division} | জেলা: {districtNameMap[selectedStory.district] || selectedStory.district}
             </p>
             <textarea
-              className="w-full h-60 p-4 bg-gray-800/70 border border-gray-600 rounded-xl text-white placeholder-gray-400
-                         focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+              className="w-full h-48 p-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               aria-label="Story content"
             />
-            <div className="flex justify-end space-x-4 mt-6">
+            <div className="flex justify-end space-x-3 mt-4">
               <button
                 onClick={() => setSelectedStory(null)}
-                className="bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-800 hover:to-gray-900 px-6 py-3 rounded-full text-lg font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md glow-effect"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-semibold"
               >
                 ✖️ বাতিল করুন
               </button>
@@ -648,7 +646,7 @@ const AdminDashboard: React.FC = () => {
                 onClick={() =>
                   updateStoryContent(selectedStory._id, editContent)
                 }
-                className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 px-6 py-3 rounded-full text-lg font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md glow-effect"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-semibold"
               >
                 ✅ আপডেট ও অনুমোদন
               </button>
@@ -659,20 +657,20 @@ const AdminDashboard: React.FC = () => {
 
       {/* Custom Confirmation Modal */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-gray-900/90 p-8 rounded-3xl shadow-3xl backdrop-blur-md max-w-sm w-full text-white border border-red-700/50 transform scale-95 animate-scale-in">
-            <h3 className="text-2xl font-bold text-red-400 mb-4 text-center">নিশ্চিত করুন</h3>
-            <p className="text-lg text-gray-300 mb-6 text-center">{confirmMessage}</p>
-            <div className="flex justify-center space-x-4">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-xs w-full text-white border border-gray-700">
+            <h3 className="text-xl font-bold text-red-400 mb-4 text-center">নিশ্চিত করুন</h3>
+            <p className="text-md text-gray-300 mb-6 text-center">{confirmMessage}</p>
+            <div className="flex justify-center space-x-3">
               <button
                 onClick={closeConfirmModal}
-                className="bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-800 hover:to-gray-900 px-6 py-3 rounded-full text-lg font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md glow-effect"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-semibold"
               >
                 না
               </button>
               <button
                 onClick={executeConfirmAction}
-                className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 px-6 py-3 rounded-full text-lg font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md glow-effect"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-semibold"
               >
                 হ্যাঁ
               </button>
@@ -683,14 +681,14 @@ const AdminDashboard: React.FC = () => {
 
       {/* Custom Info Modal */}
       {showInfoModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-gray-900/90 p-8 rounded-3xl shadow-3xl backdrop-blur-md max-w-sm w-full text-white border border-blue-700/50 transform scale-95 animate-scale-in">
-            <h3 className="text-2xl font-bold text-blue-400 mb-4 text-center">তথ্য</h3>
-            <p className="text-lg text-gray-300 mb-6 text-center">{infoMessage}</p>
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-xs w-full text-white border border-gray-700">
+            <h3 className="text-xl font-bold text-blue-400 mb-4 text-center">তথ্য</h3>
+            <p className="text-md text-gray-300 mb-6 text-center">{infoMessage}</p>
             <div className="flex justify-center">
               <button
                 onClick={closeInfoModal}
-                className="bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-800 hover:to-indigo-900 px-6 py-3 rounded-full text-lg font-bold transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md glow-effect"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-semibold"
               >
                 বন্ধ করুন
               </button>

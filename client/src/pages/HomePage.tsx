@@ -98,7 +98,7 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     // Fetch all stories to extract districts
-    fetch("https://bd-horor-atlas.onrender.com/api/stories?all=true")
+    fetch(`${import.meta.env.VITE_API_URL}/api/stories?all=true`)
       .then((res) => res.json())
       .then((data: Story[]) => {
         const uniqueDistricts = Array.from(
