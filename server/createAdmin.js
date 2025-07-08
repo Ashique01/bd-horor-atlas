@@ -5,8 +5,8 @@ require("dotenv").config();
 
 async function createAdmin() {
   await mongoose.connect(process.env.MONGO_URI);
-  const username = "admin";
-  const password = "Action.027";
+  const username = import .meta.env.USERNAME;
+  const password = import.meta.env.PASSWORD;
 
   const passwordHash = await bcrypt.hash(password, 10);
   const admin = new Admin({ username, passwordHash });

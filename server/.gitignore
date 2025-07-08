@@ -17,3 +17,6 @@ logs/
 # OS & editor
 .DS_Store
 Thumbs.db
+
+
+createAdmin.js
