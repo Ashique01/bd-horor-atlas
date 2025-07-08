@@ -6,6 +6,7 @@ dotenv.config();
 
 const app = express();
 
+// Middleware
 app.use(express.json());
 
 const allowedOrigins = [
@@ -13,11 +14,9 @@ const allowedOrigins = [
   'https://hauntedbd.netlify.app'
 ];
 
+// ✅ CORS setup
 app.use(cors({
   origin: function (origin, callback) {
-    //console.log('Incoming Origin:', origin);
-
-    // Allow requests from Postman, curl, or mobile with no origin
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -27,36 +26,32 @@ app.use(cors({
   credentials: true,
 }));
 
+// Routes
 const storyRoutes = require('./routes/stories');
 const adminRoutes = require("./routes/admin");
-
 
 app.use('/api/stories', storyRoutes);
 app.use("/api/admin", adminRoutes);
 
-// ✅ Catch all unmatched routes (404)
-app.use((req, res, next) => {
-  const errorMessage = `❌ 404 Not Found: ${req.method} ${req.originalUrl}`;
-  console.error(errorMessage); // Print in terminal
-  res.status(404).json({ error: errorMessage });
-});
-
-
+// Root route
 app.get('/', (req, res) => {
   res.send('📡 API Server is running');
 });
+
+// ✅ 404 Catch-all handler
 app.use((req, res) => {
-  res.status(404).json({ error: "Endpoint not found" });
+  const errorMessage = `❌ 404 Not Found: ${req.method} ${req.originalUrl}`;
+  console.error(errorMessage);
+  res.status(404).json({ error: errorMessage });
 });
 
+// DB + Server start
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB Connected');
     app.listen(process.env.PORT || 5000, () =>
-      console.log('🚀 Server running on port 5000')
+      console.log(`🚀 Server running on port ${process.env.PORT || 5000}`)
     );
   })
   .catch(err => console.error(err));
-
-
