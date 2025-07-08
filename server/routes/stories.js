@@ -21,7 +21,6 @@ router.get('/', async (req, res) => {
 
 // ✅ POST story (submit form)
 router.post('/', async (req, res) => {
-  console.log("Received body:", req.body);
 
   const { title, content, division, district, coordinates, source } = req.body;
 
@@ -131,7 +130,6 @@ router.patch('/:id/rejected', async (req, res) => {
   }
 });
 
-module.exports = router;
 
 // GET /api/divisions-with-stories
 router.get("/divisions-with-stories", async (req, res) => {
@@ -147,3 +145,6 @@ router.get("/divisions-with-stories", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+
+module.exports = router;
