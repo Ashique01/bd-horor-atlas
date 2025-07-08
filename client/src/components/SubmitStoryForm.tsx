@@ -38,7 +38,7 @@ const SubmitStoryForm: React.FC<SubmitStoryFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/stories", {
+      const response = await fetch("https://bd-horor-atlas.onrender.com/api/stories", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

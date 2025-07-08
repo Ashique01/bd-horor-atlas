@@ -153,7 +153,7 @@ const AdminDashboard: React.FC = () => {
   const fetchAllStories = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/stories?all=true");
+      const res = await fetch("https://bd-horor-atlas.onrender.com/api/stories?all=true");
       if (!res.ok) throw new Error("Failed to fetch stories");
       const data: Story[] = await res.json();
       setStories(data);
@@ -198,7 +198,7 @@ const AdminDashboard: React.FC = () => {
   ) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/stories/${id}/${status}`,
+        `https://bd-horor-atlas.onrender.com/api/stories/${id}/${status}`,
         {
           method: "PATCH",
         }
@@ -217,7 +217,7 @@ const AdminDashboard: React.FC = () => {
   // Update story content (for rejected story editing)
   const updateStoryContent = async (id: string, newContent: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/stories/${id}`, {
+      const res = await fetch(`https://bd-horor-atlas.onrender.com/api/stories/${id}`, {
         method: "PUT", // Assuming you have a PUT endpoint for update
         headers: {
           "Content-Type": "application/json",
@@ -236,7 +236,7 @@ const AdminDashboard: React.FC = () => {
   const deleteStory = async (id: string) => {
     openConfirmModal("আপনি কি নিশ্চিত এই স্টোরিটি মুছে ফেলতে চান?", async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/stories/${id}`, {
+        const res = await fetch(`https://bd-horor-atlas.onrender.com/api/stories/${id}`, {
           method: "DELETE",
         });
         if (!res.ok) throw new Error("Failed to delete story");
@@ -254,7 +254,7 @@ const AdminDashboard: React.FC = () => {
         const rejectedIds = rejectedStories.map((s) => s._id);
         await Promise.all(
           rejectedIds.map((id) =>
-            fetch(`http://localhost:5000/api/stories/${id}`, { method: "DELETE" })
+            fetch(`https://bd-horor-atlas.onrender.com/api/stories/${id}`, { method: "DELETE" })
           )
         );
         openInfoModal("সব বাতিলকৃত স্টোরি মুছে ফেলা হয়েছে!");

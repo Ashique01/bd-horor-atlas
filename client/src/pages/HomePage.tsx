@@ -98,7 +98,7 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     // Fetch all stories to extract districts
-    fetch("http://localhost:5000/api/stories?all=true")
+    fetch("https://bd-horor-atlas.onrender.com/api/stories?all=true")
       .then((res) => res.json())
       .then((data: Story[]) => {
         const uniqueDistricts = Array.from(

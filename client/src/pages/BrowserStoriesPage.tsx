@@ -30,7 +30,7 @@ const BrowseStoriesPage: React.FC = () => {
 
   const fetchStoriesByDistrict = (districtId: string) => {
     setLoading(true);
-    fetch(`http://localhost:5000/api/stories?district=${districtId}`)
+    fetch(`https://bd-horor-atlas.onrender.com/api/stories?district=${districtId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch stories");
         return res.json();
@@ -48,7 +48,7 @@ const BrowseStoriesPage: React.FC = () => {
   useEffect(() => {
     if (!selectedDivision) return;
 
-    fetch(`http://localhost:5000/api/districts-with-stories?division=${selectedDivision}`)
+    fetch(`https://bd-horor-atlas.onrender.com/api/districts-with-stories?division=${selectedDivision}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch story info");
         return res.json();
