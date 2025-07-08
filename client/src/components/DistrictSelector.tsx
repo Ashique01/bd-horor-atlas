@@ -20,9 +20,7 @@ const DistrictSelector: React.FC<Props> = ({ division, onSelectDistrict }) => {
 
     const fetchDistrictData = async () => {
       try {
-        const BASE_URL = import.meta.env.DEV
-          ? "http://localhost:5000"
-          : import.meta.env.VITE_API_URL;
+        const BASE_URL = import.meta.env.VITE_API_URL;
 
         const [allRes, withStoriesRes] = await Promise.all([
           fetch(`${BASE_URL}/api/districts?division=${division}`),
