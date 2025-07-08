@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optional: Spooky theme enhancements */
+body {
+  @apply bg-black text-white;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Custom CSS for HomePage.tsx */
+
+/* Fade-in Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s ease-out forwards;
+}
+
+/* Up-Down Ghost Animation */
+@keyframes updown {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px); /* Increased float height */
+  }
+}
+
+.animate-updown {
+  animation: updown 3s ease-in-out infinite; /* Slower and smoother */
+}
+
+/* Orb Movement Animation */
+@keyframes orb-move {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(50px, -30px) scale(1.05);
+  }
+  50% {
+    transform: translate(0, -60px) scale(1.1);
+  }
+  75% {
+    transform: translate(-50px, -30px) scale(1.05);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.animate-orb-move {
+  animation: orb-move 18s ease-in-out infinite alternate; /* Slower, smoother, alternating */
+}
+
+/* Glow Effect for Buttons and Title */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3), 0 0 10px var(--glow-color-light);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px var(--glow-color-main);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3), 0 0 10px var(--glow-color-light);
+  }
+}
+
+.glow-effect {
+  --glow-color-main: #a78bfa; /* Default purple */
+  --glow-color-light: #c4b5fd; /* Default lighter purple */
+  animation: glow 2s infinite alternate;
+}
+
+/* Override for pink/red buttons if needed, or define in Tailwind config */
+.bg-gradient-to-r.from-pink-600.to-red-700.glow-effect {
+  --glow-color-main: #ec4899; /* Pink */
+  --glow-color-light: #f472b6; /* Lighter pink */
+}
+
+/* Custom Scrollbar for Webkit browsers (Chrome, Safari) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px; /* Width of the scrollbar */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #1a202c; /* Color of the track */
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #6b46c1; /* Color of the scroll thumb */
+  border-radius: 10px;
+  border: 2px solid #1a202c; /* Padding around the thumb */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #805ad5; /* Color of the scroll thumb on hover */
+}
+
+/* For Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin; /* "auto" or "thin" */
+  scrollbar-color: #6b46c1 #1a202c; /* thumb color track color */
+}
