@@ -6,7 +6,7 @@ dotenv.config();
 
 const app = express();
 
-const allowedOrigins = [process.env.FRONTEND_ORIGIN || 'http://localhost:5173'];
+const allowedOrigins = [process.env.FRONTEND_ORIGIN || 'https://hauntedbd.netlify.app/'];
 
 app.use(cors({
   origin: function (origin, callback) {
