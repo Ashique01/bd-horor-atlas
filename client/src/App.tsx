@@ -15,6 +15,7 @@ import BrowseStoriesPage from "./pages/BrowserStoriesPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useState } from "react";
+import NotFound from "./pages/NotFound";
 
 
 
@@ -75,6 +76,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
 

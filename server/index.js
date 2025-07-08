@@ -30,8 +30,16 @@ app.use(cors({
 const storyRoutes = require('./routes/stories');
 const adminRoutes = require("./routes/admin");
 
+
 app.use('/api/stories', storyRoutes);
 app.use("/api/admin", adminRoutes);
+
+// ✅ Catch all unmatched routes (404)
+app.use((req, res, next) => {
+  const errorMessage = `❌ 404 Not Found: ${req.method} ${req.originalUrl}`;
+  console.error(errorMessage); // Print in terminal
+  res.status(404).json({ error: errorMessage });
+});
 
 
 app.get('/', (req, res) => {
