@@ -26,5 +26,5 @@ BD Horror Atlas is a community-driven web platform that allows users to explore,
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/bd-horror-atlas.git
+   git clone https://github.com/ashique01/bd-horor-atlas.git
    cd bd-horror-atlas
